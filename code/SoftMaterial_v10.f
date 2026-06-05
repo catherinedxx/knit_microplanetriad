@@ -457,8 +457,6 @@ C    ---- Yarn Damage
 
 
 
-
-
       
       return
       end subroutine PDMS_COTTON_InitParams
