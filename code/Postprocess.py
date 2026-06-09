@@ -245,6 +245,20 @@ def compute_global_bbox(odb, steps, nodes_coords, label_to_idx, cfg, global_fram
     return bbox
 
 
+def save_bbox_txt(bbox, output_dir):
+    """Write the global bounding box to a text file."""
+    path = os.path.join(output_dir, "global_bbox.txt")
+    with open(path, "w") as f:
+        f.write("# Global bounding box (rotated + padded)\n")
+        f.write("xmin = {:.6f}\n".format(bbox[0]))
+        f.write("xmax = {:.6f}\n".format(bbox[1]))
+        f.write("ymin = {:.6f}\n".format(bbox[2]))
+        f.write("ymax = {:.6f}\n".format(bbox[3]))
+        f.write("zmin = {:.6f}\n".format(bbox[4]))
+        f.write("zmax = {:.6f}\n".format(bbox[5]))
+    print("[BBox] saved -> {}".format(path))
+
+
 # ===================================================================
 # 3D contour plot
 # ===================================================================
@@ -682,8 +696,11 @@ def run(cfg):
         odb.close()
         return
 
-    bbox = compute_global_bbox(odb, steps, mesh["nodes_coords"],
-                               mesh["label_to_idx"], cfg, global_frames)
+    # bbox = compute_global_bbox(odb, steps, mesh["nodes_coords"],
+    #                            mesh["label_to_idx"], cfg, global_frames)
+    bbox = (-0.016334, 0.037459, -0.016458, 0.039050, -0.054412, 0.014220)
+    print("[BBox] x=[{:.3f}..{:.3f}] y=[{:.3f}..{:.3f}] z=[{:.3f}..{:.3f}]".format(*bbox))
+    # save_bbox_txt(bbox, cfg.output_dir)
     hist = extract_history(odb, cfg)
 
     # --- Save curve data as CSV ---
