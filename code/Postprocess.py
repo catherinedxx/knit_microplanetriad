@@ -4,8 +4,8 @@
 Abaqus ODB 3D post-process: deformed solid + contour + force-displacement curve + MP4.
 
 Usage:
-  abq2022 python code/abaqus_postprocess.py --odb results/Job-4.odb --components S11 S22 --legend-min 0 --legend-max 300000
-  abq2022 python code/abaqus_postprocess.py --odb results/Job-4.odb results/Job-5.odb results/Job-6.odb --components S11 S22 --output results/postprocess
+  abq2022 python code/Postprocess.py --odb results/Job-4.odb --components S11 S22 --legend-min 0 --legend-max 300000
+  abq2022 python code/Postprocess.py --odb results/Job-4.odb results/Job-5.odb results/Job-6.odb --components S11 S22 --output results/postprocess
 """
 from __future__ import print_function
 
@@ -398,6 +398,43 @@ def plot_contour_3d(frame, cfg, output_path, hex_mesh, step_name, bbox):
 
 
 # ===================================================================
+# Save curve data as CSV (Excel-compatible)
+# ===================================================================
+
+def save_curve_excel(history_data, cfg):
+    """Save force-displacement history data as CSV (opens in Excel)."""
+    import csv
+    disp_data = history_data.get("U2", [])
+    force_data = history_data.get("RF2", [])
+
+    if not disp_data or not force_data:
+        print("  [CSV] No U2+RF2 data, skip.")
+        return
+
+    disp_dict = {t: v for t, v in disp_data}
+    force_dict = {t: v for t, v in force_data}
+    common = sorted(set(disp_dict) & set(force_dict))
+    if not common:
+        print("  [CSV] No overlapping timestamps, skip.")
+        return
+
+    csv_path = os.path.join(cfg.output_dir, "curve_data.csv")
+    with open(csv_path, "wb" if sys.version_info[0] < 3 else "w") as f:
+        if sys.version_info[0] >= 3:
+            f = open(csv_path, "w", newline="")
+        else:
+            f = open(csv_path, "wb")
+        writer = csv.writer(f)
+        writer.writerow(["Time", "U2", "RF2"])
+        for t in common:
+            writer.writerow(["{:.6f}".format(t),
+                             "{:.6f}".format(disp_dict[t]),
+                             "{:.6f}".format(force_dict[t])])
+        f.close()
+    print("  [CSV] {} rows -> {}".format(len(common), csv_path))
+
+
+# ===================================================================
 # Force-displacement curve
 # ===================================================================
 
@@ -648,6 +685,9 @@ def run(cfg):
     bbox = compute_global_bbox(odb, steps, mesh["nodes_coords"],
                                mesh["label_to_idx"], cfg, global_frames)
     hist = extract_history(odb, cfg)
+
+    # --- Save curve data as CSV ---
+    save_curve_excel(hist, cfg)
 
     # --- Pre-scan: compute global field range for consistent colorbar ---
     if cfg.legend_min is None or cfg.legend_max is None:
